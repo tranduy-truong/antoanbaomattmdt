@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+    app:
+        build: .
+        ports:
+            - "8000:80" # Truy cập web ở cổng 8000
+        volumes:
+            - .:/var/www/html
+        depends_on:
+            - db
+        networks:
+            - laravel_net
+
+    db:
+        image: mysql:8.0
+        environment:
+            MYSQL_DATABASE: instrumentstore
+            MYSQL_ROOT_PASSWORD: root
+        ports:
+            - "3306:3306"
+        volumes:
+            # Lệnh thần thánh: Tự động nạp file data.sql vào database khi khởi động
+            - ./sql/vinmark.sql:/docker-entrypoint-initdb.d/vinmark.sql
+            - db_data:/var/lib/mysql
+        networks:
+            - laravel_net
+
+networks:
+    laravel_net:
+        driver: bridge
+
+volumes:
+    db_data:
