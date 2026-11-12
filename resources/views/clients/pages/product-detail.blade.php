@@ -105,8 +105,8 @@
                                     <div class="ltn__product-details-menu-3">
                                         <ul>
                                             <li>
-                                                <a href="javascript:void(0)" title="Yêu thích" data-bs-toggle="modal"
-                                                    data-bs-target="#liton_wishlist_modal">
+                                                <a href="javascript:void(0)" title="Yêu thích" class="add-to-wishlist"
+                                                    data-id="{{ $product->id }}">
                                                     <i class="far fa-heart"></i>
                                                     <span>Thêm vào yêu thích</span>
                                                 </a>
@@ -200,6 +200,16 @@
                                         </div>
                                     </div>
 
+                                    @guest
+                                        <p><a href="{{ route('login') }}">Đăng nhập</a> để đánh giá sản phẩm đã nhận.</p>
+                                    @else
+                                        @if ($hasReviewed)
+                                            <p>Bạn đã đánh giá sản phẩm này.</p>
+                                        @elseif (!$hasPurchased)
+                                            <p>Bạn có thể viết đánh giá sau khi đơn hàng được đánh dấu đã giao.</p>
+                                        @endif
+                                    @endguest
+
                                     @if (Auth::check() && $hasPurchased && !$hasReviewed)
                                         <div class="ltn__comment-reply-area ltn__form-box mb-30">
                                             <form id="review-form" data-product-id="{{ $product->id }}">
@@ -229,7 +239,7 @@
                                                 <input type="hidden" name="rating" id="rating-value" value="0">
 
                                                 <div class="input-item input-item-textarea ltn__custom-icon">
-                                                    <textarea id="review-content" placeholder="Nhận xét của bạn về sản phẩm này..."></textarea>
+                                                    <textarea id="review-content" maxlength="1000" placeholder="Nhận xét của bạn về sản phẩm này..."></textarea>
                                                 </div>
 
                                                 <div class="btn-wrapper">

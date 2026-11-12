@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Wishlist;
 
-class WishListController extends Controller
+class WishlistController extends Controller
 {
     public function index()
     {
@@ -18,20 +18,21 @@ class WishListController extends Controller
 
     public function addToWishList(Request $request)
     {
-        $user_id = Auth::id();
-        $product_id = $request->product_id;
-
-        WishList::create([
-            'user_id' => $user_id,
-            'product_id' => $product_id
-        ]);
+        $request->validate(['product_id' => 'required|integer|exists:products,id']);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+            \App\Models\User::whereKey(Auth::id())->lockForUpdate()->firstOrFail();
+            Wishlist::firstOrCreate([
+                'user_id' => Auth::id(),
+                'product_id' => $request->product_id,
+            ]);
+        }, 3);
         return response()->json([
             'status' => true,
         ], 200);
     }
 
     public function removeWishListItem(Request $request){
-        WishList::where('user_id', Auth::id())->where('product_id', $request->product_id)->delete();
+        Wishlist::where('user_id', Auth::id())->where('product_id', $request->product_id)->delete();
 
         return response()->json([
             'status' => true,

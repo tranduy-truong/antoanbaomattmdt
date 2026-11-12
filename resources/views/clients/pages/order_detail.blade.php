@@ -15,7 +15,7 @@
                     <span class="badge bg-info">Đang xử lý</span>
                 @elseif($order->status == 'completed')
                     <span class="badge bg-success">Hoàn thành</span>
-                @elseif($order->status == 'canceled')
+                @elseif(in_array($order->status, ['cancelled', 'canceled'], true))
                     <span class="badge bg-danger">Đã hủy</span>
                 @endif
             </p>
@@ -64,7 +64,7 @@
             <p>Thành phố: {{ $order->shippingAddress->city }}</p>
             <p>Số điện thoại: {{ $order->shippingAddress->phone }}</p>
 
-            @if ($order->status == 'pending')
+            @if ($order->canCancel())
                 <form action="{{ route('order.cancel', $order->id) }}" method="POST"
                     onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này không?');">
                     @csrf

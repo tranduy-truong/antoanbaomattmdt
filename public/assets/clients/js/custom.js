@@ -892,6 +892,10 @@ $(document).ready(function () {
      **********************************************/
 
     if (window.location.pathname.startsWith("/product/")) {
+        if (window.location.hash === "#liton_tab_details_1_2") {
+            const reviewTab = document.querySelector('[href="#liton_tab_details_1_2"]');
+            if (reviewTab && window.bootstrap?.Tab) new bootstrap.Tab(reviewTab).show();
+        }
         let selectedRating = 0;
 
         // Handle hover on stars
@@ -936,9 +940,7 @@ $(document).ready(function () {
 
             // Kiểm tra nếu chưa chọn số sao
             if (rating == 0 || rating === "") {
-                $("#review-message").html(
-                    '<div class="alert alert-danger">Vui lòng chọn số sao!</div>',
-                );
+                toastr.error("Vui lòng chọn số sao.");
                 return;
             }
 
@@ -955,23 +957,19 @@ $(document).ready(function () {
             $.ajax({
                 url: "/review",
                 type: "POST",
+                dataType: "json",
                 data: {
                     product_id: productId,
                     rating: rating,
                     comment: content,
                 },
                 success: function (response) {
-                    $("#review-content").val("");
-                    highlightStars(0); // reset lại sao
-                    selectedRating = 0;
-                    $(".ltn__comment-reply-area").hide();
-                    toastr.success("Cảm ơn bạn đã đánh giá sản phẩm!");
-
-                    loadReviews(productId);
+                    history.replaceState(null, "", "#liton_tab_details_1_2");
+                    window.location.reload();
                 },
                 error: function (xhr) {
                     toastr.error(
-                        "Đã xảy ra lỗi khi gửi đánh giá. Vui lòng thử lại!",
+                        xhr.responseJSON?.message || "Không thể gửi đánh giá. Vui lòng thử lại.",
                     );
                 },
             });
@@ -1026,28 +1024,33 @@ $(document).ready(function () {
 
     $(document).on("click", ".add-to-wishlist", function (e) {
         e.preventDefault();
-
-        let productId = $(this).data("id");
-
-        $.ajaxSetup({
-            headers: {
-                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
-            },
-        });
+        const button = $(this);
+        if (button.data("saving")) return;
+        button.data("saving", true);
 
         $.ajax({
             url: "/wishlist/add",
             type: "POST",
-            data: {
-                product_id: productId,
+            dataType: "json",
+            headers: {
+                "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
             },
+            data: { product_id: button.data("id") },
             success: function (response) {
                 if (response.status) {
-                    $("#liton_wishlist_modal-" + productId).modal("show");
+                    button.attr("aria-pressed", "true").find(".fa-heart").removeClass("far").addClass("fas");
+                    toastr.success("Đã thêm sản phẩm vào danh sách yêu thích.");
                 }
             },
             error: function (xhr) {
-                alert("Có lỗi xảy ra với ajax addToWishList");
+                if (xhr.status === 401) {
+                    window.location.assign("/login");
+                    return;
+                }
+                toastr.error(xhr.responseJSON?.message || "Không thể thêm sản phẩm vào danh sách yêu thích.");
+            },
+            complete: function () {
+                button.removeData("saving");
             },
         });
     });

@@ -18,11 +18,9 @@ class OrderController extends Controller
 
     public function confirm(Request $request)
     {
-        $order = Order::find($request->id);
+        $updated = Order::whereKey($request->id)->where('status', 'pending')->update(['status' => 'processing']);
 
-        if ($order) {
-            $order->status = 'processing';
-            $order->save();
+        if ($updated) {
 
             return response()->json([
                 'message' => 'Xác nhận đơn hàng thành công',
@@ -35,6 +33,17 @@ class OrderController extends Controller
             'status'  => false
         ]);
     }
+    public function complete(int $id)
+    {
+        $updated = Order::whereKey($id)->where('status', 'processing')->update(['status' => 'completed']);
+        if ($updated) {
+            toastr()->success('Đã đánh dấu đơn hàng là đã giao.');
+        } else {
+            toastr()->error('Chỉ có thể đánh dấu đã giao cho đơn đang xử lý.');
+        }
+        return back();
+    }
+
     public function showOrderDetail($id)
     {
         $order = Order::with('orderItems.product', 'shippingAddress', 'user', 'payment')->find($id);
@@ -98,38 +107,12 @@ class OrderController extends Controller
 
     public function cancelOrder(Request $request)
     {
-        // 1. Lấy Order ID từ request gửi lên
-        $id = $request->id;
-
-        // 2. Tìm kiếm đơn hàng trong cơ sở dữ liệu dựa trên ID
-        $order = Order::find($id);
-
-        // 3. Kiểm tra xem đơn hàng có tồn tại hay không
-        if ($order) {
-            // Lặp qua tất cả các mặt hàng trong đơn hàng để hoàn trả số lượng vào kho
-            foreach ($order->orderItems as $item) {
-                // Update product stock
-                // Tăng số lượng (stock) của sản phẩm lên bằng số lượng (quantity) đã đặt
-                $item->product->increment('stock', $item->quantity);
-            }
-
-            // Cập nhật trạng thái đơn hàng thành 'canceled' (đã hủy)
-            $order->status = 'cancelled';
-
-            // Lưu lại thay đổi vào cơ sở dữ liệu
-            $order->save();
-
-            // Trả về phản hồi JSON báo hủy thành công
-            return response()->json([
-                'status' => true,
-                'message' => 'Đơn hàng đã được hủy thành công!',
-            ]);
+        $data = $request->validate(['id' => 'required|integer|min:1']);
+        try {
+            app(\App\Services\CancelOrder::class)->execute($data['id']);
+        } catch (\Illuminate\Validation\ValidationException $error) {
+            return response()->json(['status' => false, 'message' => $error->getMessage()]);
         }
-
-        // Nếu đơn hàng không tồn tại, trả về phản hồi JSON báo lỗi
-        return response()->json([
-            'status' => false,
-            'message' => 'Đơn hàng không tồn tại!',
-        ]);
+        return response()->json(['status' => true, 'message' => 'Đơn hàng đã được hủy thành công.']);
     }
 }

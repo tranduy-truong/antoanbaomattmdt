@@ -81,10 +81,7 @@ public function filter(Request $request)
         if(Auth::check()){
             $user = Auth::user();
 
-            $hasPurchased = OrderItem::whereHas('order', function($query) use ($user) {
-                $query->where('user_id', $user->id)
-                      ->where('status', 'completed');
-            })->where('product_id', $product->id)->exists();
+            $hasPurchased = ReviewController::hasCompletedPurchase($user->id, $product->id);
 
             $hasReviewed = Review::where('user_id', $user->id)
                             ->where('product_id', $product->id)

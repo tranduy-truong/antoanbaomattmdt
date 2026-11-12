@@ -23,6 +23,9 @@ class RedirectIfNotAuthenticated
             }
         } else {
             if(!Auth::guard('web')->check()) {
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Vui lòng đăng nhập để tiếp tục.'], 401);
+                }
                 toastr()->error('Vui lòng đăng nhập để tiếp tục');
                 return redirect()->route('login');
             }

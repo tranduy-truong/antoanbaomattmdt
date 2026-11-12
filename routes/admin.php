@@ -66,6 +66,7 @@ Route::prefix('admin')->group(function () {
             Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
             // Xác nhận đơn hàng
             Route::post('/orders/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
+            Route::post('/orders/{id}/complete', [OrderController::class, 'complete'])->whereNumber('id')->name('admin.orders.complete');
             // Show order details route
             Route::get('/order-detail/{id}', [OrderController::class, 'showOrderDetail'])->name('admin.order-detail');
             // Send order detail email route

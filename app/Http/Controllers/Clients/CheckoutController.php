@@ -55,7 +55,7 @@ class CheckoutController extends Controller
     public function placeOrder(Request $request)
     {
         $request->validate([
-            'address_id' => 'required|exists:shipping_addresses,id',
+            'address_id' => ['required', \Illuminate\Validation\Rule::exists('shipping_addresses', 'id')->where('user_id', Auth::id())->whereNull('deleted_at')],
             'payment_method' => 'required|in:cash,paypal'
         ]);
         // validate cart not empty
@@ -122,7 +122,7 @@ class CheckoutController extends Controller
             'payerID' => 'required',
             'transactionID' => 'required',
             'amount' => 'required|numeric',
-            'address_id' => 'required|exists:shipping_addresses,id',
+            'address_id' => ['required', \Illuminate\Validation\Rule::exists('shipping_addresses', 'id')->where('user_id', Auth::id())->whereNull('deleted_at')],
             'payment_method' => 'required|string'
         ]);
 
@@ -188,7 +188,7 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1000',
-            'address_id' => 'required|exists:shipping_addresses,id',
+            'address_id' => ['required', \Illuminate\Validation\Rule::exists('shipping_addresses', 'id')->where('user_id', Auth::id())->whereNull('deleted_at')],
         ]);
 
         $user = Auth::user();
@@ -336,7 +336,7 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:1000',
-            'address_id' => 'required|exists:shipping_addresses,id',
+            'address_id' => ['required', \Illuminate\Validation\Rule::exists('shipping_addresses', 'id')->where('user_id', Auth::id())->whereNull('deleted_at')],
         ]);
 
         $user = Auth::user();
