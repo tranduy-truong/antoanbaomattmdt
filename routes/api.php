@@ -26,3 +26,5 @@ Route::post('/mobile/reviews', [\App\Http\Controllers\Api\MobileCheckoutControll
 Route::post('/mobile/orders/{id}/cancel', [\App\Http\Controllers\Api\MobileCheckoutController::class, 'cancelOrder'])->whereNumber('id');
 
 Route::post('/mobile/contact', [\App\Http\Controllers\Clients\ContactController::class, 'sendMobileContact'])->middleware('throttle:5,1');
+
+Route::post('/mobile/search/image', [\App\Http\Controllers\Api\ImageSearchController::class, 'recognize'])->middleware('throttle:5,1');
