@@ -24,3 +24,5 @@ Route::get('/mobile/reviews/product/{id}', [\App\Http\Controllers\Api\MobileChec
 Route::get('/mobile/reviews/mine', [\App\Http\Controllers\Api\MobileCheckoutController::class, 'ownReviews']);
 Route::post('/mobile/reviews', [\App\Http\Controllers\Api\MobileCheckoutController::class, 'submitReview'])->middleware('throttle:20,1');
 Route::post('/mobile/orders/{id}/cancel', [\App\Http\Controllers\Api\MobileCheckoutController::class, 'cancelOrder'])->whereNumber('id');
+
+Route::post('/mobile/contact', [\App\Http\Controllers\Clients\ContactController::class, 'sendMobileContact'])->middleware('throttle:5,1');

@@ -534,7 +534,7 @@ $(document).ready(function () {
         let isReplied = $(this).data("is_replyed");
 
         $(".mail_view .sender-info strong:first").text(contactName);
-        $(".mail_view .sender-info span").text(contactEmail);
+        $(".mail_view .sender-info span").text([contactEmail, $(this).attr("data-phone")].filter(Boolean).join(" · "));
         $(".mail_view .view-mail p").html(contactMessage);
 
         $(".mail_view").show();

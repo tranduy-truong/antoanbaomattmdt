@@ -51,7 +51,7 @@
                                     @foreach ($contacts as $contact)
                                         <a href="javascript:void(0);" class="contact-item"
                                             data-name="{{ $contact->full_name }}" data-email="{{ $contact->email }}"
-                                            data-message="{{ $contact->message }}" data-id="{{ $contact->id }}"
+                                            data-phone="{{ $contact->phone_number }}" data-message="{{ $contact->message }}" data-id="{{ $contact->id }}"
                                             data-is_replyed="{{ $contact->is_replyed }}">
 
                                             <div class="mail_list p-2"
