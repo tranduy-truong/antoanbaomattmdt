@@ -34,6 +34,12 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'admin_push' => [
+        'public_key' => env('ADMIN_PUSH_PUBLIC_KEY'),
+        'private_key' => env('ADMIN_PUSH_PRIVATE_KEY'),
+        'subject' => env('ADMIN_PUSH_SUBJECT', env('APP_URL')),
+    ],
+
     'gemini' => [
         'relay_url' => env('GEMINI_RELAY_URL'),
         'relay_token' => env('GEMINI_RELAY_TOKEN'),
