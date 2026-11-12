@@ -22,6 +22,16 @@
             <p>Phương thức thanh toán:
                 @if ($order->payment && $order->payment->payment_method == 'cash')
                     <span class="badge bg-primary">Thanh toán khi nhận hàng</span>
+                @elseif($order->payment?->payment_method === 'payos')
+                    <span class="badge bg-primary">Chuyển khoản QR</span>
+                    @if($order->payment->status === 'completed')
+                        <span class="badge bg-success">Đã thanh toán</span>
+                    @elseif($order->payment->status === 'pending')
+                        <span class="badge bg-warning text-dark">Chờ xác nhận thanh toán</span>
+                        @if($order->payment->payos_checkout_url)
+                            <a href="{{ $order->payment->payos_checkout_url }}">Mở lại mã QR</a>
+                        @endif
+                    @endif
                 @elseif($order->payment && $order->payment->payment_method == 'momo')
                     <span class="badge bg-primary">Thanh toán bằng momo</span>
                 @elseif($order->payment && $order->payment->payment_method == 'paypal')

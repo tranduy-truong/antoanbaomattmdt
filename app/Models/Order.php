@@ -13,7 +13,7 @@ class Order extends Model
     public function canCancel(): bool
     {
         return $this->status === 'pending'
-            && $this->payment?->payment_method === 'cash'
+            && in_array($this->payment?->payment_method, ['cash', 'payos'], true)
             && $this->payment?->status === 'pending';
     }
 

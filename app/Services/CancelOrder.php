@@ -23,8 +23,26 @@ class CancelOrder
             }
             if (!$order->canCancel()) {
                 throw ValidationException::withMessages([
-                    'order' => 'Chỉ có thể hủy đơn COD đang chờ xác nhận.',
+                    'order' => 'Chỉ có thể hủy đơn chưa thanh toán và đang chờ xác nhận.',
                 ]);
+            }
+
+            if ($order->payment?->payment_method === 'payos') {
+                $payment = $order->payment()->lockForUpdate()->firstOrFail();
+                if ($payment->status !== 'pending' || !$payment->payos_link_id) {
+                    throw ValidationException::withMessages(['order' => 'Không thể hủy giao dịch này.']);
+                }
+                try {
+                    $link = \App\Support\VinmarkPayOS::client()->paymentRequests
+                        ->cancel($payment->payos_link_id, 'Vinmark cancelled order');
+                } catch (\PayOS\Exceptions\PayOSException) {
+                    throw ValidationException::withMessages(['order' => 'payOS chưa xác nhận hủy. Hãy thử lại.']);
+                }
+                if ($link->status !== \PayOS\Models\V2\PaymentRequests\PaymentLinkStatus::CANCELLED
+                    || $link->amountPaid !== 0) {
+                    throw ValidationException::withMessages(['order' => 'Giao dịch đã nhận tiền hoặc chưa được hủy.']);
+                }
+                $payment->update(['status' => 'failed']);
             }
 
             $quantities = $order->orderItems->groupBy('product_id')->sortKeys();

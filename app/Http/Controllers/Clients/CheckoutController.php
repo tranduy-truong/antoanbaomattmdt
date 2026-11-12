@@ -56,8 +56,10 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'address_id' => ['required', \Illuminate\Validation\Rule::exists('shipping_addresses', 'id')->where('user_id', Auth::id())->whereNull('deleted_at')],
-            'payment_method' => 'required|in:cash,paypal'
+            'payment_method' => 'required|in:cash,paypal,payos'
         ]);
+        $isPayOS = $request->payment_method === 'payos';
+        abort_if($isPayOS && !\App\Support\VinmarkPayOS::enabled(), 503);
         // validate cart not empty
         $user = Auth::user();
         $cartItems = CartItem::where('user_id', $user->id)->with('product')->get();
@@ -68,11 +70,31 @@ class CheckoutController extends Controller
         }
         DB::beginTransaction();
         try {
+            if ($isPayOS) {
+                \App\Models\User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+                $cartItems = CartItem::where('user_id', $user->id)->lockForUpdate()->get();
+                if ($cartItems->isEmpty()) {
+                    throw new \RuntimeException('Cart is empty.');
+                }
+                $products = \App\Models\Product::whereIn('id', $cartItems->pluck('product_id'))
+                    ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+                foreach ($cartItems as $item) {
+                    $product = $products->get($item->product_id);
+                    if (!$product || $product->status !== 'in_stock' || $product->stock < $item->quantity) {
+                        throw new \RuntimeException('Product is unavailable.');
+                    }
+                    $item->setRelation('product', $product);
+                }
+            }
+
             // create order
             $order = new Order();
             $order->user_id = $user->id;
             $order->shipping_address_id = $request->address_id;
             $order->total_price = $cartItems->sum(fn($item) => $item->quantity * $item->product->price);
+            if ($isPayOS) {
+                $order->total_price += 25000;
+            }
             $order->status = 'pending';
             $order->save();
 
@@ -93,7 +115,7 @@ class CheckoutController extends Controller
             }
 
             // create payment
-            Payment::create([
+            $payment = Payment::create([
                 'order_id' => $order->id,
                 'amount' => $order->total_price,
                 'payment_method' => $request->payment_method,
@@ -101,15 +123,20 @@ class CheckoutController extends Controller
                 'paid_at' => null,
             ]);
 
+            $checkoutUrl = $isPayOS ? \App\Support\VinmarkPayOS::createLink($order, $payment) : null;
+
             // delete products in cart when order success
             CartItem::where('user_id', $user->id)->delete();
             DB::commit();
+            if ($checkoutUrl) {
+                return redirect()->away($checkoutUrl);
+            }
             toastr()->success('Đặt hàng thành công!');
             return redirect()->route('account');
         } catch (\Exception $e) {
-            Log::error("Lỗi đặt hàng: " . $e->getMessage());
+            Log::error('Lỗi đặt hàng', ['exception_type' => get_class($e)]);
             DB::rollBack();
-            toastr()->error('Đặt hàng thất bại. Vui lòng thử lại sau.' . $e->getMessage());
+            toastr()->error('Đặt hàng thất bại. Vui lòng kiểm tra giỏ hàng và thử lại.');
             return redirect()->route('checkout');
         }
     }

@@ -124,7 +124,9 @@
                                     <div class="col-md-6">
                                         <p class="lead">Phương thức thanh toán</p>
 
-                                        @if ($order->payment->payment_method == 'momo')
+                                        @if ($order->payment->payment_method === 'payos')
+                                            Chuyển khoản QR (payOS)
+                                        @elseif ($order->payment->payment_method == 'momo')
                                             <img src="{{ asset('assets/admin/images/momo.png') }}" alt="Momo">
                                         @elseif ($order->payment->payment_method == 'cash')
                                             <img src="{{ asset('assets/admin/images/cash_delivery.png') }}" alt="COD">

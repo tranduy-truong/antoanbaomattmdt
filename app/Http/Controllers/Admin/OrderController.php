@@ -18,7 +18,9 @@ class OrderController extends Controller
 
     public function confirm(Request $request)
     {
-        $updated = Order::whereKey($request->id)->where('status', 'pending')->update(['status' => 'processing']);
+        $updated = Order::whereKey($request->id)->where('status', 'pending')
+            ->whereDoesntHave('payment', fn ($query) => $query->where('payment_method', 'payos')->where('status', '!=', 'completed'))
+            ->update(['status' => 'processing']);
 
         if ($updated) {
 

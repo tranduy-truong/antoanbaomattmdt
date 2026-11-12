@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\CatalogController;
 use Illuminate\Support\Facades\Route;
 
+Route::post('/payments/payos/webhook', \App\Http\Controllers\Api\PayOSWebhookController::class);
+
 Route::get('/categories', [CatalogController::class, 'categories']);
 Route::get('/products', [CatalogController::class, 'products']);
 Route::get('/products/{id}', [CatalogController::class, 'product'])->whereNumber('id');
