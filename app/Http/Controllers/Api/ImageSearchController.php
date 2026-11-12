@@ -32,7 +32,16 @@ class ImageSearchController extends Controller
                     ]]],
                     'generationConfig' => ['responseMimeType' => 'application/json', 'temperature' => 0, 'maxOutputTokens' => 512, 'thinkingConfig' => ['thinkingBudget' => 0]],
                 ]);
-            if (!$response->successful()) return response()->json(['message' => 'Dịch vụ nhận diện ảnh đang bận. Hãy thử lại sau.'], 503);
+            if (!$response->successful()) {
+                $status = $response->status();
+                $message = match ($status) {
+                    429 => 'Gemini đã hết hạn mức hoặc đang giới hạn lượt gọi. Vui lòng thử lại sau.',
+                    400, 401, 403 => 'Cấu hình Gemini chưa hợp lệ hoặc key chưa được cấp quyền. Vui lòng liên hệ quản trị.',
+                    404 => 'Model nhận diện ảnh chưa khả dụng. Vui lòng liên hệ quản trị.',
+                    default => 'Dịch vụ nhận diện ảnh đang bận. Hãy thử lại sau.',
+                };
+                return response()->json(['message' => $message, 'provider_status' => $status], 503);
+            }
             $text = collect($response->json('candidates.0.content.parts', []))->pluck('text')->implode('');
             $result = json_decode($text, true);
             $query = is_array($result) ? ($result['query'] ?? null) : null;
