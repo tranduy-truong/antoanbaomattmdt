@@ -10,6 +10,13 @@ class Order extends Model
     use HasFactory;
     protected $fillable = ['user_id', 'total_price', 'status', 'shipping_address_id'];
 
+    public function canCancel(): bool
+    {
+        return $this->status === 'pending'
+            && in_array($this->payment?->payment_method, ['cash', 'payos'], true)
+            && $this->payment?->status === 'pending';
+    }
+
     public function user(){
         return $this->belongsTo(User::class);
     }
@@ -19,7 +26,7 @@ class Order extends Model
     }
 
     public function shippingAddress(){
-        return $this->belongsTo(ShippingAddress::class);
+        return $this->belongsTo(ShippingAddress::class)->withTrashed();
     }
 
     public function payment(){

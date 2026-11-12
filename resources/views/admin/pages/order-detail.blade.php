@@ -124,7 +124,9 @@
                                     <div class="col-md-6">
                                         <p class="lead">Phương thức thanh toán</p>
 
-                                        @if ($order->payment->payment_method == 'momo')
+                                        @if ($order->payment->payment_method === 'payos')
+                                            Chuyển khoản QR (payOS)
+                                        @elseif ($order->payment->payment_method == 'momo')
                                             <img src="{{ asset('assets/admin/images/momo.png') }}" alt="Momo">
                                         @elseif ($order->payment->payment_method == 'cash')
                                             <img src="{{ asset('assets/admin/images/cash_delivery.png') }}" alt="COD">
@@ -165,13 +167,20 @@
                                             <i class="fa fa-print"></i> In hóa đơn
                                         </button>
 
+                                        @if ($order->status === 'processing')
+                                            <form method="POST" action="{{ route('admin.orders.complete', $order->id) }}" class="d-inline">
+                                                @csrf
+                                                <button class="btn btn-primary" type="submit">Đánh dấu đã giao</button>
+                                            </form>
+                                        @endif
+
                                         @if ($order->status != 'cancelled')
                                             <button class="btn btn-success pull-right send-invoice-mail"
                                                 data-id="{{ $order->id }}">
                                                 <i class="fa fa-send"></i> Gửi hóa đơn
                                             </button>
 
-                                            @if ($order->status == 'pending')
+                                            @if ($order->canCancel())
                                                 <button class="btn btn-danger pull-right cancel-order"
                                                     style="margin-right: 5px;" data-id="{{ $order->id }}">
                                                     <i class="fa fa-remove"></i> Hủy đơn hàng

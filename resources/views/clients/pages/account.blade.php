@@ -72,7 +72,7 @@
                                                                     <span class="badge bg-info">Đang xử lý</span>
                                                                 @elseif($order->status == 'completed')
                                                                     <span class="badge bg-success">Hoàn thành</span>
-                                                                @elseif($order->status == 'canceled')
+                                                                @elseif(in_array($order->status, ['cancelled', 'canceled'], true))
                                                                     <span class="badge bg-danger">Đã hủy</span>
                                                                 @endif
                                                             </td>

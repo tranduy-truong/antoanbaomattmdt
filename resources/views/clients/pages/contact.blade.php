@@ -68,7 +68,7 @@
                                 </div>
                             </div>
                             <div class="input-item input-item-textarea ltn__custom-icon">
-                                <textarea name="message" placeholder="Nhập nội dung tin nhắn"></textarea required>
+                                <textarea name="message" placeholder="Nhập nội dung tin nhắn" maxlength="4000" required></textarea>
                                 </div>
                                 <div class="btn-wrapper mt-0">
                                     <button class="btn theme-btn-1 btn-effect-1 text-uppercase" type="submit">

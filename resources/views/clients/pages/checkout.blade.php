@@ -107,6 +107,14 @@
                                     </h5>
                                 </div>
                                 {{-- /VNPay QR --}}
+                                @if (\App\Support\VinmarkPayOS::enabled())
+                                    <div class="card">
+                                        <h5 class="ltn__card-title">
+                                            <input type="radio" name="payment_method" value="payos" id="payment_payos">
+                                            <label for="payment_payos">Chuyển khoản ngân hàng (QR payOS)</label>
+                                        </h5>
+                                    </div>
+                                @endif
                             </div>
                             <div class="ltn__payment-note mt-30 mb-30">
                                 <p>Thông tin cá nhân của bạn sẽ được sử dụng để xử lý đơn hàng, hỗ trợ trải nghiệm trên

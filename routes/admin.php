@@ -63,9 +63,12 @@ Route::prefix('admin')->group(function () {
         // Route management for users with 'manage_orders' permission
         Route::middleware(['permission:manage_orders'])->group(function () {
             // User management routes can be added here
+            Route::post('/order-push-subscriptions', [\App\Http\Controllers\Admin\OrderPushController::class, 'store'])->name('admin.order-push.store');
+            Route::delete('/order-push-subscriptions', [\App\Http\Controllers\Admin\OrderPushController::class, 'destroy']);
             Route::get('/orders', [OrderController::class, 'index'])->name('admin.orders.index');
             // Xác nhận đơn hàng
             Route::post('/orders/confirm', [OrderController::class, 'confirm'])->name('orders.confirm');
+            Route::post('/orders/{id}/complete', [OrderController::class, 'complete'])->whereNumber('id')->name('admin.orders.complete');
             // Show order details route
             Route::get('/order-detail/{id}', [OrderController::class, 'showOrderDetail'])->name('admin.order-detail');
             // Send order detail email route

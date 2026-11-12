@@ -26,21 +26,19 @@ class AccountController extends Controller
 {
     $user = Auth::user();
 
-    // 1. TẮT BẢO VỆ: Comment dòng kiểm tra đuôi file avatar lại
+ 
     $request->validate([
         'ltn__name'   => 'required|string|max:255',
         'ltn__phonenumber'  => 'nullable|string|max:20',
         'ltn__address' => 'nullable|string|max:255',
     ]);
 
-    // 2. CODE DỄ BỊ TỔN THƯƠNG 
+
     if ($request->hasFile('avatar')) {
         $file = $request->file('avatar');
         $filename = $file->getClientOriginalName(); 
-        
-        // SỬA CHỖ NÀY: Lưu thẳng ra thư mục public ngoài cùng
         $file->move(public_path('uploads/users'), $filename);
-        $user->avatar = 'uploads/users/' . $filename; // Lưu vào DB cả đường dẫn
+        $user->avatar = 'uploads/users/' . $filename; 
     }
 
     // Cập nhật thông tin cơ bản

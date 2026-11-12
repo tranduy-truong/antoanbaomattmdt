@@ -34,8 +34,23 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'payos' => [
+        'enabled' => env('PAYOS_ENABLED', false),
+        'client_id' => env('PAYOS_CLIENT_ID'),
+        'api_key' => env('PAYOS_API_KEY'),
+        'checksum_key' => env('PAYOS_CHECKSUM_KEY'),
+    ],
+
+    'admin_push' => [
+        'public_key' => env('ADMIN_PUSH_PUBLIC_KEY'),
+        'private_key' => env('ADMIN_PUSH_PRIVATE_KEY'),
+        'subject' => env('ADMIN_PUSH_SUBJECT', env('APP_URL')),
+    ],
+
     'gemini' => [
-        'key' => env('GOOGLE_GEMINI_API_KEY'),
+        'relay_url' => env('GEMINI_RELAY_URL'),
+        'relay_token' => env('GEMINI_RELAY_TOKEN'),
+        'key' => env('GEMINI_API_KEY', env('GOOGLE_GEMINI_API_KEY')),
     ],
 
 ];

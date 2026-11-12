@@ -49,16 +49,26 @@ class AuthController extends Controller
         // create token activation
         $token = \Illuminate\Support\Str::random(64);
 
-        $user = \App\Models\User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'activation_token' => $token,
-            'status' => 'pending',
-            'role_id' => 3, // default role is user
-        ]);
+        $user = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $token) {
+            $user = \App\Models\User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'activation_token' => $token,
+                'status' => 'pending',
+                'role_id' => 3, // default role is user
+            ]);
 
-        Mail::to($user->email)->send(new \App\Mail\ActivationMail($token, $user));
+            Mail::to($user->email)->send(new \App\Mail\ActivationMail($token, $user));
+            return $user;
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                '_id' => (string) $user->id,
+                'message' => 'Đăng ký thành công. Vui lòng kiểm tra email để kích hoạt tài khoản.',
+            ], 201);
+        }
 
         toastr()->success('Đăng ký thành công! Vui lòng kiểm tra email của bạn để kích hoạt tài khoản.');
         return redirect()->route('login');

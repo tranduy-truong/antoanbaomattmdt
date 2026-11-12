@@ -71,6 +71,16 @@
             @include('admin.partials.top-navigation')
 
             <main>
+                @if(config('services.admin_push.public_key') && config('services.admin_push.private_key') && auth('admin')->user()?->role?->permissions?->contains('name', 'manage_orders'))
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-success btn-sm" data-order-push
+                                data-worker="{{ asset('admin-order-push-sw.js') }}"
+                                data-endpoint="{{ route('admin.order-push.store') }}"
+                                data-key="{{ config('services.admin_push.public_key') }}">Bật báo đơn trên máy này</button>
+                        <small id="order-push-status" role="status"></small>
+                    </div>
+                    <script src="{{ asset('admin-order-push.js') }}" defer></script>
+                @endif
                 @yield('content');
             </main>
 

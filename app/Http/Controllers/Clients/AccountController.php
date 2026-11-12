@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Clients;
 use App\Http\Controllers\Controller;
 use App\Models\ShippingAddress;
 use App\Models\Order;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -111,7 +113,6 @@ class AccountController extends Controller
     // Add address 
     public function addAddress(Request $request)
     {
-        // Validate form
         $validated = $request->validate([
             'full_name' => 'required|string|min:3|max:100',
             'phone' => 'required|digits:10',
@@ -120,57 +121,57 @@ class AccountController extends Controller
             'default' => 'nullable|boolean',
         ]);
 
-        // Nếu chọn "Đặt làm mặc định" thì reset địa chỉ khác
-        if ($request->has('default')) {
-            ShippingAddress::where('user_id', Auth::id())->update(['default' => 0]);
-        }
+        $userId = Auth::id();
+        DB::transaction(function () use ($validated, $userId) {
+            User::whereKey($userId)->lockForUpdate()->firstOrFail();
+            $addresses = ShippingAddress::where('user_id', $userId);
+            $primary = ($validated['default'] ?? false) || !(clone $addresses)->where('default', true)->exists();
+            if ($primary) {
+                $addresses->update(['default' => false]);
+            }
+            ShippingAddress::create(array_merge($validated, ['user_id' => $userId, 'default' => $primary]));
+        }, 3);
 
-        // Thêm địa chỉ mới
-        ShippingAddress::create([
-            'user_id' => Auth::id(),
-            'full_name' => $request->full_name,
-            'phone' => $request->phone,
-            'address' => $request->address,
-            'city' => $request->city,
-            'default' => $request->has('default') ? 1 : 0,
-        ]);
-
-        return response()->json([
-        'success' => true,
-        'message' => 'Đã thêm địa chỉ thành công!'
-    ]);
+        return response()->json(['success' => true, 'message' => 'Đã thêm địa chỉ thành công.'], 201);
     }
-public function updatePrimaryAddress($id)
-{
-    // Tìm địa chỉ của user hiện tại
-    $address = ShippingAddress::where('id', $id)
-        ->where('user_id', Auth::id())
-        ->firstOrFail();
 
-    // Reset tất cả địa chỉ khác
-    ShippingAddress::where('user_id', Auth::id())
-        ->update(['default' => 0]);
+    public function updatePrimaryAddress($id)
+    {
+        $userId = Auth::id();
+        DB::transaction(function () use ($id, $userId) {
+            User::whereKey($userId)->lockForUpdate()->firstOrFail();
+            $addresses = ShippingAddress::where('user_id', $userId);
+            $address = (clone $addresses)->findOrFail($id);
+            $addresses->update(['default' => false]);
+            ShippingAddress::whereKey($address->id)->update(['default' => true]);
+        }, 3);
 
-    // Cập nhật địa chỉ được chọn
-    $address->update(['default' => 1]);
-
-    toastr()->success('Địa chỉ mặc định đã được cập nhật!');
-    return back();
-}
-
-    // Trong AccountController.php (hoặc Controller tương ứng)
+        return $this->addressResult('Đã cập nhật địa chỉ mặc định.');
+    }
 
     public function deleteAddress($id)
     {
-        $address = ShippingAddress::where('id', $id)
-                                    ->where('user_id', Auth::id())
-                                    ->first();
-        if ($address) {
+        $userId = Auth::id();
+        DB::transaction(function () use ($id, $userId) {
+            User::whereKey($userId)->lockForUpdate()->firstOrFail();
+            $addresses = ShippingAddress::where('user_id', $userId);
+            $address = (clone $addresses)->findOrFail($id);
+            $wasPrimary = $address->default;
             $address->delete();
-            toastr()->success('Địa chỉ đã được xóa thành công!');
-        } else {
-            toastr()->error('Không tìm thấy địa chỉ hoặc bạn không có quyền xóa địa chỉ này.');
+            if ($wasPrimary && !(clone $addresses)->where('default', true)->exists()) {
+                $addresses->orderBy('id')->first()?->update(['default' => true]);
+            }
+        }, 3);
+
+        return $this->addressResult('Đã xóa địa chỉ khỏi sổ địa chỉ.');
+    }
+
+    private function addressResult(string $message)
+    {
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => $message]);
         }
+        toastr()->success($message);
         return back();
     }
 }

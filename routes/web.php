@@ -101,9 +101,9 @@ Route::middleware(['auth.custom'])->group(function () {
     Route::get('/review/{product}', [ReviewController::class, 'index']);
 
     //Wishlist Route
-    Route::get('/wishlist', [WishListController::class, 'index'])->name('wishlist.index');
-    Route::post('/wishlist/add', [WishListController::class, 'addToWishList']);
-    Route::post('/wishlist/remove', [WishListController::class, 'removeWishListItem']);
+    Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
+    Route::post('/wishlist/add', [WishlistController::class, 'addToWishList']);
+    Route::post('/wishlist/remove', [WishlistController::class, 'removeWishListItem']);
 });
 
 // Product
@@ -168,3 +168,4 @@ Route::get('/check-models', function () {
     }
 });
 require __DIR__ . '/admin.php';
+

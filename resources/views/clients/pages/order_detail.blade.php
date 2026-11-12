@@ -15,13 +15,23 @@
                     <span class="badge bg-info">Đang xử lý</span>
                 @elseif($order->status == 'completed')
                     <span class="badge bg-success">Hoàn thành</span>
-                @elseif($order->status == 'canceled')
+                @elseif(in_array($order->status, ['cancelled', 'canceled'], true))
                     <span class="badge bg-danger">Đã hủy</span>
                 @endif
             </p>
             <p>Phương thức thanh toán:
                 @if ($order->payment && $order->payment->payment_method == 'cash')
                     <span class="badge bg-primary">Thanh toán khi nhận hàng</span>
+                @elseif($order->payment?->payment_method === 'payos')
+                    <span class="badge bg-primary">Chuyển khoản QR</span>
+                    @if($order->payment->status === 'completed')
+                        <span class="badge bg-success">Đã thanh toán</span>
+                    @elseif($order->payment->status === 'pending')
+                        <span class="badge bg-warning text-dark">Chờ xác nhận thanh toán</span>
+                        @if($order->payment->payos_checkout_url)
+                            <a href="{{ $order->payment->payos_checkout_url }}">Mở lại mã QR</a>
+                        @endif
+                    @endif
                 @elseif($order->payment && $order->payment->payment_method == 'momo')
                     <span class="badge bg-primary">Thanh toán bằng momo</span>
                 @elseif($order->payment && $order->payment->payment_method == 'paypal')
@@ -64,7 +74,7 @@
             <p>Thành phố: {{ $order->shippingAddress->city }}</p>
             <p>Số điện thoại: {{ $order->shippingAddress->phone }}</p>
 
-            @if ($order->status == 'pending')
+            @if ($order->canCancel())
                 <form action="{{ route('order.cancel', $order->id) }}" method="POST"
                     onsubmit="return confirm('Bạn có chắc muốn hủy đơn hàng này không?');">
                     @csrf
