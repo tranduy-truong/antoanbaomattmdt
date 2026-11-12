@@ -196,7 +196,7 @@ class CartController extends Controller
         $subtotal = $product->price * $request->quantity;
         $total = $this->calculateTotal();
         
-        $grandTotal = $total + 25000; // Add any additional fees if necessary
+        $grandTotal = $total;
 
         $subtotal = number_format($subtotal, 0, ',', '.');
         $total = number_format($total, 0, ',', '.');
@@ -253,7 +253,7 @@ class CartController extends Controller
         }
         // Caculate total price
         $total = $this->calculateTotal();
-        $grandTotal = $total + 25000; // Add any additional fees if necessary
+        $grandTotal = $total;
         return response()->json([
             'status' => true,
             'message' => 'Đã xóa sản phẩm khỏi giỏ hàng thành công',

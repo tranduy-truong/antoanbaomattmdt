@@ -96,17 +96,6 @@
                                     </h5>
                                 </div>
                                 {{-- /COD  --}}
-                                {{-- VNPay QR --}}
-                                <div class="card">
-                                    <h5 class="collapsed ltn__card-title" data-bs-toggle="collapse"
-                                        data-bs-target="#faq-item-2-6" aria-expanded="false">
-                                        <input type="radio" name="payment_method" value="vnpay" id="payment_vnpay">
-                                        VNPay QR
-                                        <img src="{{ asset('assets/clients/img/icons/vnpay.jpg') }}" alt="VNPay"
-                                            style="width: 40px; margin-left: 10px;">
-                                    </h5>
-                                </div>
-                                {{-- /VNPay QR --}}
                                 @if (\App\Support\VinmarkPayOS::enabled())
                                     <div class="card">
                                         <h5 class="ltn__card-title">
@@ -145,12 +134,12 @@
                                 </tr>
                                 <tr>
                                     <td>Phí vận chuyển</td>
-                                    <td>{{ number_format(25000, 0, ',', '.') }} đ</td>
+                                    <td>Miễn phí</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Tổng thanh toán</strong></td>
                                     <td><strong
-                                            class="totalPrice_Checkout">{{ number_format($totalPrice + 25000, 0, ',', '.') }}
+                                            class="totalPrice_Checkout">{{ number_format($totalPrice, 0, ',', '.') }}
                                             đ</strong></td>
                                 </tr>
                             </tbody>

@@ -282,6 +282,8 @@ class MobileCheckoutController extends Controller
                 ? implode(', ', array_filter([$order->shippingAddress->address, $order->shippingAddress->city]))
                 : null,
             'paymentMethod' => $order->payment?->payment_method,
+            'paymentStatus' => $order->payment?->status,
+            'paymentUrl' => $order->payment?->status === 'pending' ? $order->payment->payos_checkout_url : null,
             'canCancel' => $order->canCancel(),
             'items' => $order->orderItems->map(fn (OrderItem $item) => [
                 'productId' => (string) $item->product_id,
@@ -298,6 +300,7 @@ class MobileCheckoutController extends Controller
     {
         $data = $request->validate([
             'request_id' => 'required|uuid',
+            'payment_method' => 'sometimes|in:cash,payos',
             'shipping_address_id' => 'sometimes|required|integer|min:1',
             'items' => 'required|array|min:1|max:100',
             'items.*.id' => 'required|integer|min:1|distinct',
@@ -310,71 +313,91 @@ class MobileCheckoutController extends Controller
             return response()->json(['message' => 'Phiên đăng nhập Vinmark đã hết hạn.'], 401);
         }
 
-        $order = DB::transaction(function () use ($user, $data) {
-            User::whereKey($user->id)->lockForUpdate()->firstOrFail();
-            $existing = Order::where('user_id', $user->id)->where('mobile_request_id', $data['request_id'])->first();
-            if ($existing) {
-                return $existing;
-            }
-
-            $address = ShippingAddress::where('user_id', $user->id)->where('default', true)->first();
-            if (!$address) {
-                throw ValidationException::withMessages(['address' => 'Hãy đặt địa chỉ giao hàng mặc định trong tài khoản Vinmark trên web.']);
-            }
-
-            if (isset($data['shipping_address_id']) && (int) $data['shipping_address_id'] !== $address->id) {
-                throw ValidationException::withMessages(['address' => 'Địa chỉ mặc định đã thay đổi. Hãy kiểm tra lại trước khi đặt.']);
-            }
-
-            $items = collect($data['items'])->keyBy('id');
-            $products = Product::whereIn('id', $items->keys())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
-            $total = 0;
-            foreach ($items as $id => $item) {
-                $product = $products->get($id);
-                if (!$product || $product->status !== 'in_stock' || $product->stock < $item['quantity']) {
-                    throw ValidationException::withMessages(['items' => 'Có sản phẩm không còn đủ hàng. Hãy mở lại giỏ để cập nhật.']);
+        $method = $data['payment_method'] ?? 'cash';
+        try {
+            $order = DB::transaction(function () use ($user, $data, $method) {
+                User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+                $existing = Order::where('user_id', $user->id)->where('mobile_request_id', $data['request_id'])->first();
+                if ($existing) {
+                    return $existing;
                 }
-                if ((float) $product->price !== (float) $item['price']) {
-                    throw ValidationException::withMessages(['items' => 'Giá sản phẩm đã thay đổi. Hãy mở lại giỏ để cập nhật.']);
+
+                if ($method === 'payos' && !\App\Support\VinmarkPayOS::enabled()) {
+                    throw ValidationException::withMessages(['payment_method' => 'Chuyển khoản QR hiện chưa khả dụng.']);
                 }
-                $total += $product->price * $item['quantity'];
-            }
 
-            $order = new Order([
-                'user_id' => $user->id,
-                'shipping_address_id' => $address->id,
-                'total_price' => $total,
-                'status' => 'pending',
-            ]);
-            $order->mobile_request_id = $data['request_id'];
-            $order->save();
+                $address = ShippingAddress::where('user_id', $user->id)->where('default', true)->first();
+                if (!$address) {
+                    throw ValidationException::withMessages(['address' => 'Hãy đặt địa chỉ giao hàng mặc định trong tài khoản Vinmark trên web.']);
+                }
 
-            foreach ($items as $id => $item) {
-                $product = $products->get($id);
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $id,
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
+                if (isset($data['shipping_address_id']) && (int) $data['shipping_address_id'] !== $address->id) {
+                    throw ValidationException::withMessages(['address' => 'Địa chỉ mặc định đã thay đổi. Hãy kiểm tra lại trước khi đặt.']);
+                }
+
+                $items = collect($data['items'])->keyBy('id');
+                $products = Product::whereIn('id', $items->keys())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+                $total = 0;
+                foreach ($items as $id => $item) {
+                    $product = $products->get($id);
+                    if (!$product || $product->status !== 'in_stock' || $product->stock < $item['quantity']) {
+                        throw ValidationException::withMessages(['items' => 'Có sản phẩm không còn đủ hàng. Hãy mở lại giỏ để cập nhật.']);
+                    }
+                    if ((float) $product->price !== (float) $item['price']) {
+                        throw ValidationException::withMessages(['items' => 'Giá sản phẩm đã thay đổi. Hãy mở lại giỏ để cập nhật.']);
+                    }
+                    $total += $product->price * $item['quantity'];
+                }
+
+                $order = new Order([
+                    'user_id' => $user->id,
+                    'shipping_address_id' => $address->id,
+                    'total_price' => $total,
+                    'status' => 'pending',
                 ]);
-                $product->decrement('stock', $item['quantity']);
-                $cartItem = CartItem::where('user_id', $user->id)->where('product_id', $id)->lockForUpdate()->first();
-                if ($cartItem && $cartItem->quantity <= $item['quantity']) {
-                    $cartItem->delete();
-                } elseif ($cartItem) {
-                    $cartItem->decrement('quantity', $item['quantity']);
+                $order->mobile_request_id = $data['request_id'];
+                $order->save();
+
+                foreach ($items as $id => $item) {
+                    $product = $products->get($id);
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $id,
+                        'quantity' => $item['quantity'],
+                        'price' => $product->price,
+                    ]);
+                    $product->decrement('stock', $item['quantity']);
+                    $cartItem = CartItem::where('user_id', $user->id)->where('product_id', $id)->lockForUpdate()->first();
+                    if ($cartItem && $cartItem->quantity <= $item['quantity']) {
+                        $cartItem->delete();
+                    } elseif ($cartItem) {
+                        $cartItem->decrement('quantity', $item['quantity']);
+                    }
                 }
-            }
-            Payment::create([
-                'order_id' => $order->id,
-                'amount' => $total,
-                'payment_method' => 'cash',
-                'status' => 'pending',
-            ]);
+                $payment = Payment::create([
+                    'order_id' => $order->id,
+                    'amount' => $total,
+                    'payment_method' => $method,
+                    'status' => 'pending',
+                ]);
 
-            return $order;
-        }, 3);
+                if ($method === 'payos') {
+                    \App\Support\VinmarkPayOS::createLink($order, $payment);
+                }
 
-        return response()->json(['id' => $order->id]);
+                return $order;
+            }, $method === 'payos' ? 1 : 3);
+        } catch (\PayOS\Exceptions\PayOSException | \UnexpectedValueException $error) {
+            logger()->warning('Không tạo được thanh toán payOS cho đơn app', ['exception_type' => get_class($error)]);
+            return response()->json(['message' => 'Chưa tạo được mã QR. Vui lòng thử lại.'], 502);
+        }
+
+        $payment = $order->payment;
+        return response()->json([
+            'id' => $order->id,
+            'paymentMethod' => $payment?->payment_method,
+            'paymentStatus' => $payment?->status,
+            'paymentUrl' => $payment?->status === 'pending' ? $payment->payos_checkout_url : null,
+        ]);
     }
 }

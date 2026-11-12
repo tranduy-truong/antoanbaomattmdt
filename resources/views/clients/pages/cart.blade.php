@@ -72,11 +72,11 @@
                                         </tr>
                                         <tr>
                                             <td>Phí vận chuyển</td>
-                                            <td>25.000 đ</td>
+                                            <td>Miễn phí</td>
                                         </tr>
                                         <tr>
                                             <td><strong>Tổng thanh toán</strong></td>
-                                            <td><strong id="grand_total">{{ number_format($cartTotal + 25000, 0, ',', '.') }} đ</strong></td>
+                                            <td><strong id="grand_total">{{ number_format($cartTotal, 0, ',', '.') }} đ</strong></td>
                                             </td>
                                         </tr>
                                     </tbody>

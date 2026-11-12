@@ -88,7 +88,6 @@ Route::middleware(['auth.custom'])->group(function () {
     Route::post('/checkout/momo/notify', [CheckoutController::class, 'momoNotify'])->name('checkout.momoNotify');
 
     // VNPay routes
-    Route::post('/checkout/vnpay-qr', [CheckoutController::class, 'placeOrderVnpayQR'])->name('checkout.placeOrderVnpayQR');
     Route::get('/checkout/vnpay-return', [CheckoutController::class, 'vnpayReturn'])->name('checkout.vnpayReturn');
 
     // Order

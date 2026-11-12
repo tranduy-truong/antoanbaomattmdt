@@ -832,11 +832,11 @@ $(document).ready(function () {
     //     }
     // }).render('#paypal-button-container');
 
-    // Handle MoMo and VNPay payment
+    // Handle MoMo payment
     $("#checkout-form").on("submit", function (e) {
         const paymentMethod = $('input[name="payment_method"]:checked').val();
 
-        if (paymentMethod === "momo" || paymentMethod === "vnpay") {
+        if (paymentMethod === "momo") {
             e.preventDefault(); // Chặn submit mặc định
 
             const addressId = $("#list_address").val();
@@ -846,10 +846,7 @@ $(document).ready(function () {
                 .trim();
             const totalPrice = parseInt(totalPriceText);
 
-            const endpoint =
-                paymentMethod === "momo"
-                    ? "/checkout/momo"
-                    : "/checkout/vnpay-qr";
+            const endpoint = "/checkout/momo";
 
             fetch(endpoint, {
                 method: "POST",

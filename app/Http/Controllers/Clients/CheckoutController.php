@@ -92,9 +92,6 @@ class CheckoutController extends Controller
             $order->user_id = $user->id;
             $order->shipping_address_id = $request->address_id;
             $order->total_price = $cartItems->sum(fn($item) => $item->quantity * $item->product->price);
-            if ($isPayOS) {
-                $order->total_price += 25000;
-            }
             $order->status = 'pending';
             $order->save();
 
@@ -164,7 +161,7 @@ class CheckoutController extends Controller
         try {
             // Tính tổng giá sản phẩm trong giỏ
             $subtotalUSD = $request->amount;
-            $totalPriceVND = $subtotalUSD * 25000 + 25000; // nhân tỷ giá & cộng phí ship
+            $totalPriceVND = $subtotalUSD * 25000; // Quy đổi USD sang VND
 
             // Tạo đơn hàng
             $order = Order::create([
