@@ -35,6 +35,8 @@ return [
         ],
     ],
     'gemini' => [
+        'relay_url' => env('GEMINI_RELAY_URL'),
+        'relay_token' => env('GEMINI_RELAY_TOKEN'),
         'key' => env('GEMINI_API_KEY', env('GOOGLE_GEMINI_API_KEY')),
     ],
 
